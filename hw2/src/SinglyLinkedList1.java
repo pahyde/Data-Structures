@@ -10,6 +10,13 @@ public class SinglyLinkedList<T> {
     private LinkedListNode<T> head;
     private int size;
 
+    /*
+     *     head
+     *      v
+     *      v
+     *
+     *      Nm -> N0 -> N1 -> ... -> Nm
+     */
 
     /**
      * Adds the element to the index specified.
@@ -31,27 +38,28 @@ public class SinglyLinkedList<T> {
             String message = String.format("Attempting to add data at index %d to SinglyLinkedList of size %d", index, size);
             throw new IndexOutOfBoundsException(message);
         }
-        if (index == 0) {
-            addToFront(data);
-        } else if (size > 1 && index == size) {
-            addToBack(data);
-        } else {
-            LinkedListNode<T> prev = getPrevNode(index);
-            prev.setNext(new LinkedListNode<>(data, prev.getNext()));
-            size++;
+        if (size == 0) {
+            addToEmptyList(data);
+            return;
         }
+        LinkedListNode<T> prev = getPrevNode(index);
+        prev.setNext(new LinkedListNode<>(data, prev.getNext()));
+        if (index == size) {
+            head = head.getNext();
+        }
+        size++;
     }
 
     /**
      * Returns LinkedListNode that points to Node at index
-     * calling function must guarantee 1 <= index < size
      *
      * @param index the requested index for the new element
      * @return the Node pointing to Node at index
      */
     private LinkedListNode<T> getPrevNode(int index) {
         LinkedListNode<T> prev = head;
-        for (int i = 0; i < index-1; i++) {
+        int stepsToPrev = index % size;
+        for (int i = 0; i < stepsToPrev; i++) {
             prev = prev.getNext();
         }
         return prev;
@@ -79,12 +87,7 @@ public class SinglyLinkedList<T> {
      * @throws IllegalArgumentException if data is null
      */
     public void addToFront(T data) {
-        if (size == 0) {
-            addToEmptyList(data);
-            return;
-        }
-        addAtIndex(1, data);
-        swapData(head, head.getNext());
+        addAtIndex(0, data);
     }
 
     /**
@@ -96,25 +99,7 @@ public class SinglyLinkedList<T> {
      * @throws IllegalArgumentException if data is null
      */
     public void addToBack(T data) {
-        if (size == 0) {
-            addToEmptyList(data);
-            return;
-        }
-        addAtIndex(1, data);
-        swapData(head, head.getNext());
-        head = head.getNext();
-    }
-
-    /**
-     * Swaps the data between to LinkedListNodes
-     *
-     * @param node1 the first node with data to be swapped
-     * @param node2 the second node with data to be swapped
-     */
-    private void swapData(LinkedListNode<T> node1, LinkedListNode<T> node2) {
-        T tmp = node1.getData();
-        node1.setData(node2.getData());
-        node2.setData(tmp);
+        addAtIndex(size, data);
     }
 
     /**
@@ -132,12 +117,13 @@ public class SinglyLinkedList<T> {
             String message = String.format("Attempting to remove data at index %d to SinglyLinkedList of size %d", index, size);
             throw new IndexOutOfBoundsException(message);
         }
-        if (index == 0 || size == 1) {
-            return removeFromFront();
-        }
         LinkedListNode<T> prev = getPrevNode(index);
         LinkedListNode<T> removed = prev.getNext();
-        prev.setNext(prev.getNext().getNext());
+        if (size == 0) {
+            clear();
+        } else {
+            prev.setNext(prev.getNext().getNext());
+        }
         size--;
         return removed.getData();
     }
@@ -151,11 +137,7 @@ public class SinglyLinkedList<T> {
      * @return the data formerly located at the front, null if empty list
      */
     public T removeFromFront() {
-        if (size == 1) {
-            return removeFromSingletonList();
-        }
-        swapData(head, head.getNext());
-        return removeAtIndex(1);
+        return removeAtIndex(0);
     }
 
     /**
@@ -168,17 +150,6 @@ public class SinglyLinkedList<T> {
      */
     public T removeFromBack() {
         return removeAtIndex(size-1);
-    }
-
-    /**
-     * Removes the remaining LinkedListNode from a singleton list (size == 1)
-     *
-     * @return the data formerly located at the removed node
-     */
-    private T removeFromSingletonList() {
-        T removed = head.getData();
-        clear();
-        return removed;
     }
 
     /**
@@ -195,18 +166,20 @@ public class SinglyLinkedList<T> {
         if (data == null) {
             throw new IllegalArgumentException("Attempting to remove last occurrence of null data from SinglyLinkedList");
         }
-        int last = -1;
+        LinkedListNode<T> last = null;
         LinkedListNode<T> curr = head;
         for (int i = 0; i < size; i++) {
-            if (curr.getData().equals(data)) {
-               last = i; 
+            if (curr.getNext().getData().equals(data)) {
+               last = curr; 
             }
             curr = curr.getNext();
         }
-        if (last == -1) {
+        if (last == null) {
             return null;
         }
-        return removeAtIndex(last);
+        T removed = last.getNext().getData();
+        last.setNext(last.getNext().getNext());
+        return removed;
     }
 
     /**
@@ -224,8 +197,7 @@ public class SinglyLinkedList<T> {
             String message = String.format("Attempting to get data at index %d from SinglyLinkedList of size %d", index, size);
             throw new IndexOutOfBoundsException(message);
         }
-        LinkedListNode<T> target = index == 0 ? head : getPrevNode(index).getNext();
-        return target.getData();
+        return getPrevNode(index).getNext().getData();
     }
 
     /**
@@ -240,8 +212,8 @@ public class SinglyLinkedList<T> {
         Object[] elements = new Object[size];
         LinkedListNode<T> curr = head;
         for (int i = 0; i < size; i++) {
-            elements[i] = curr.getData();
             curr = curr.getNext();
+            elements[i] = curr;
         }
         return elements;
     }
