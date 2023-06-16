@@ -24,15 +24,16 @@ public class LinkedQueue<T> {
      */
     public void enqueue(T data) {
         if (data == null) {
-            throw new IllegalArgumentException("Data can't be null");
+            throw new IllegalArgumentException("Attempting to enqueue null data to LinkedQueue");
         }
-        LinkedNode<T> tmp = new LinkedNode<>(data);
+        LinkedNode<T> newNode = new LinkedNode<T>(data);
         if (size == 0) {
-            head = tmp;
+            head = newNode;
+            tail = newNode;
         } else {
-            tail.setNext(tmp);
+            tail.setNext(newNode);
+            tail = tail.getNext();
         }
-        tail = tmp;
         size++;
     }
 
@@ -46,14 +47,17 @@ public class LinkedQueue<T> {
      */
     public T dequeue() {
         if (size == 0) {
-            throw new NoSuchElementException("Queue is empty");
+            throw new NoSuchElementException("Attempting to dequeue from empty LinkedQueue");
         }
-        T tmp = head.getData();
-        head = head.getNext();
-        if (--size == 0) {
+        T dequeued = head.getData();
+        if (size == 1) {
+            head = null;
             tail = null;
+        } else {
+            head = head.getNext();
         }
-        return tmp;
+        size--;
+        return dequeued;
     }
 
     /**

@@ -24,10 +24,9 @@ public class LinkedStack<T> {
      */
     public void push(T data) {
         if (data == null) {
-            throw new IllegalArgumentException("Data can't be null");
+            throw new IllegalArgumentException("Attempting to push null data to LinkedStack");
         }
-        LinkedNode<T> tmp = new LinkedNode<>(data, head);
-        head = tmp;
+        head = new LinkedNode<T>(data, head);
         size++;
     }
 
@@ -41,12 +40,12 @@ public class LinkedStack<T> {
      */
     public T pop() {
         if (size == 0) {
-            throw new NoSuchElementException("Stack is empty");
+            throw new NoSuchElementException("Attempting to pop from an empty LinkedStack");
         }
-        T tmp = peek();
+        T popped = head.getData();
         head = head.getNext();
         size--;
-        return tmp;
+        return popped;
     }
 
     /**

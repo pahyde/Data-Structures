@@ -3,8 +3,7 @@ import java.util.NoSuchElementException;
 /**
  * Your implementation of an array-backed queue.
  *
- * @author Hwuiwon Kim
- * @userid hkim944
+ * @author Parker Hyde
  * @version 1.0
  */
 public class ArrayQueue<T> {
@@ -24,8 +23,6 @@ public class ArrayQueue<T> {
      */
     public ArrayQueue() {
         backingArray = (T[]) new Object[INITIAL_CAPACITY];
-        front = 0;
-        size = 0;
     }
 
     /**
@@ -43,17 +40,28 @@ public class ArrayQueue<T> {
      */
     public void enqueue(T data) {
         if (data == null) {
-            throw new IllegalArgumentException("Data can't be null");
+            throw new IllegalArgumentException("Attempting to enqueue null data to ArrayQueue");
         }
-        if (size == backingArray.length) {
-            T[] tmpArray = (T[]) new Object[backingArray.length * 2];
-            for (int i = 0; i < backingArray.length; i++) {
-                tmpArray[i] = backingArray[(front + i) % backingArray.length];
-            }
-            backingArray = tmpArray;
-            front = 0;
+        checkCapacity();
+        backingArray[(front + size) % backingArray.length] = data;
+        size++;
+    }
+
+    /*
+     * This method checks if backingArray has capacity for an additional enqueue
+     * If not, backingArray is resized to double its length
+     */
+    private void checkCapacity() {
+        int capacity = backingArray.length;
+        if (capacity >= size+1) {
+            return;
         }
-        backingArray[((size++) + front) % backingArray.length] = data;
+        T[] newBackingArray = (T[]) new Object[capacity*2];
+        for (int i = 0; i < size; i++) {
+            newBackingArray[i] = backingArray[(front + i) % capacity];
+        }
+        backingArray = newBackingArray;
+        front = 0;
     }
 
     /**
@@ -74,15 +82,13 @@ public class ArrayQueue<T> {
      */
     public T dequeue() {
         if (size == 0) {
-            throw new NoSuchElementException("Queue is empty");
+            throw new NoSuchElementException("Attempting to dequeue from an empty ArrayQueue");
         }
-        T tmp = peek();
+        T dequeued = backingArray[front];
         backingArray[front] = null;
         front = (front + 1) % backingArray.length;
-        if (--size == 0) {
-            front = 0;
-        }
-        return tmp;
+        size--;
+        return dequeued;
     }
 
     /**

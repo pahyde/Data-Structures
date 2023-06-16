@@ -3,8 +3,7 @@ import java.util.NoSuchElementException;
 /**
  * Your implementation of an array-backed stack.
  *
- * @author Hwuiwon Kim
- * @userid hkim944
+ * @author Parker Hyde
  * @version 1.0
  */
 public class ArrayStack<T> {
@@ -23,7 +22,6 @@ public class ArrayStack<T> {
      */
     public ArrayStack() {
         backingArray = (T[]) new Object[INITIAL_CAPACITY];
-        size = 0;
     }
 
     /**
@@ -40,17 +38,29 @@ public class ArrayStack<T> {
      */
     public void push(T data) {
         if (data == null) {
-            throw new IllegalArgumentException("Data can't be null");
+            throw new IllegalArgumentException("Attempting to push null data to ArrayStack");
         }
-        if (size == backingArray.length) {
-            T[] tmpArray = (T[]) new Object[backingArray.length * 2];
-            for (int i = 0; i < backingArray.length; i++) {
-                tmpArray[i] = backingArray[i];
-            }
-            backingArray = tmpArray;
-        }
+        checkCapacity();
         backingArray[size++] = data;
     }
+
+    /*
+     * This method checks if backingArray has capacity for an additional push
+     * If not, backingArray is resized to double its length
+     */
+    private void checkCapacity() {
+        int capacity = backingArray.length;
+        if (capacity >= size+1) {
+            return;
+        }
+        T[] newBackingArray = (T[]) new Object[capacity*2];
+        for (int i = 0; i < size; i++) {
+            newBackingArray[i] = backingArray[i];
+        }
+        backingArray = newBackingArray;
+    }
+
+
 
     /**
      * Removes and returns the top-most element on the stack.
@@ -67,11 +77,12 @@ public class ArrayStack<T> {
      */
     public T pop() {
         if (size == 0) {
-            throw new NoSuchElementException("Stack is empty");
+            throw new NoSuchElementException("Attempting to pop from an empty ArrayStack");
         }
-        T tmp = peek();
-        backingArray[--size] = null;
-        return tmp;
+        T popped = backingArray[size-1];
+        backingArray[size-1] = null;
+        size--;
+        return popped;
     }
 
     /**
@@ -85,7 +96,7 @@ public class ArrayStack<T> {
         if (size == 0) {
             return null;
         }
-        return backingArray[size - 1];
+        return backingArray[size-1];
     }
 
     /**
