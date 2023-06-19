@@ -4,8 +4,7 @@ import java.util.NoSuchElementException;
 /**
  * Your implementation of a max heap.
  *
- * @author Hwuiwon Kim
- * @userid hkim944
+ * @author Parker Hyde
  * @version 1.0
  */
 public class MaxHeap<T extends Comparable<? super T>> {
@@ -17,7 +16,7 @@ public class MaxHeap<T extends Comparable<? super T>> {
     private int size;
 
     /**
-     * Creates a Heap with an initial capacity of INITIAL_CAPACITY
+     * Creates a MaxHeap with an initial capacity of INITIAL_CAPACITY
      * for the backing array.
      *
      * Use the constant field provided. Do not use magic numbers!
@@ -30,13 +29,13 @@ public class MaxHeap<T extends Comparable<? super T>> {
     /**
      * Creates a properly ordered heap from a set of initial values.
      *
-     * You must use the BuildHeap algorithm that was taught in lecture! Simply
+     * You must use the BuildMaxHeap algorithm that was taught in lecture! Simply
      * adding the data one by one using the add method will not get any credit.
      * As a reminder, this is the algorithm that involves building the heap
-     * from the bottom up by repeated use of downHeap operations.
+     * from the bottom up by repeated use of downMaxHeap operations.
      *
      * The data in the backingArray should be in the same order as it appears
-     * in the passed in ArrayList before you start the Build Heap Algorithm.
+     * in the passed in ArrayList before you start the Build MaxHeap Algorithm.
      *
      * The backingArray should have capacity 2n + 1 where n is the
      * number of data in the passed in ArrayList (not INITIAL_CAPACITY from
@@ -49,28 +48,73 @@ public class MaxHeap<T extends Comparable<? super T>> {
      */
     public MaxHeap(ArrayList<T> data) {
         if (data == null) {
-            throw new IllegalArgumentException("Data can't be null");
+            throw new IllegalArgumentException("Attempting to insert null ArrayList into MaxHeap");
         }
-        backingArray = (T[]) new Comparable[data.size() * 2 + 1];
-        size = data.size();
-        for (int i = 0; i < size; i++) {
-            if (data.get(i) == null) {
-                throw new IllegalArgumentException("Data can't be null");
-            }
-            backingArray[i + 1] = data.get(i);
+        if (data.contains(null)) {
+            throw new IllegalArgumentException("Attempting to insert ArrayList with null data into MaxHeap");
         }
-        for (int i = size / 2; i >= 1; i--) {
-            maxHeapify(i);
+        int n = data.size();
+        backingArray = (T[]) new Comparable[2*n + 1];
+        for (int i = 0; i < n; i++) {
+            backingArray[i+1] = data.get(i);
+        }
+        size = n;
+        heapifyBackingArray();
+    }
+
+    /**
+     * Uses the buildheap algorithm to build the tree from the bottom up.
+     * Ensures the heap property by recursively replacing out of order parent nodes with max(child1, child2). 
+     * smaller nodes are effectively sifted down the tree. 
+     */
+    private void heapifyBackingArray() {
+        int startIdx = size / 2;
+        for (int i = startIdx; i > 0; i--) {
+            heapify(i);
         }
     }
 
     /**
-     * Exchanges the value of specified indexes
-     *
-     * @param i the index of a value getting exchanged with j
-     * @param j the index of a value getting exchanged with i
+     * Recursively ensures the heap property is satisfied for a given node and it's children.
      */
-    private void exchange(int i, int j) {
+    private void heapify(int index) {
+        int leftIndex = index*2;
+        int rightIndex = index*2+1;
+        if (leftIndex > size) {
+            // no children
+            return;
+        }
+        if (leftIndex == size) {
+            // left child only
+            if (backingArray[index].compareTo(backingArray[leftIndex]) < 0) {
+                // parent < left child
+                swap(index, leftIndex);
+            }
+            return;
+        }
+        // left and right child
+        T parent = backingArray[index];
+        T left = backingArray[leftIndex];
+        T right = backingArray[rightIndex];
+        if (parent.compareTo(left) >= 0 && parent.compareTo(right) >= 0) {
+            return;
+        }
+        if (left.compareTo(right) >= 0) {
+            swap(index, leftIndex);
+            heapify(leftIndex);
+        } else {
+            swap(index, rightIndex);
+            heapify(rightIndex);
+        }
+    }
+
+    /**
+     * Ensures the heap property is satisfied for a given node.
+     *
+     * @param i first index to swap
+     * @param i second index to swap
+     */
+    private void swap(int i, int j) {
         T tmp = backingArray[i];
         backingArray[i] = backingArray[j];
         backingArray[j] = tmp;
@@ -85,23 +129,46 @@ public class MaxHeap<T extends Comparable<? super T>> {
      */
     public void add(T item) {
         if (item == null) {
-            throw new IllegalArgumentException("Data can't be null");
+            throw new IllegalArgumentException("Attempting to add null data to MaxHeap");
         }
-        if (size == backingArray.length - 1) {
-            T[] tmp = (T[]) new Comparable[backingArray.length * 2];
-            for (int i = 0; i < backingArray.length; i++) {
-                tmp[i] = backingArray[i];
-            }
-            backingArray = tmp;
-        }
+        checkCapacity();
         backingArray[++size] = item;
-        int i = size;
-        while (i > 1
-                && backingArray[i / 2].compareTo(backingArray[i]) < 0) {
-            exchange(i, i / 2);
-            i /= 2;
+        siftUp(size);
+    }
+
+    /**
+     * Checks the capacity of the backing array
+     * doubles the capacity if backingArray is full
+     */
+    private void checkCapacity() {
+        int capacity = backingArray.length;
+        int utilized = size+1;
+        if (utilized < capacity) {
+            return;
+        }
+        T[] newBackingArray = (T[]) new Object[2*capacity];
+        for (int i = 0; i <= size; i++) {
+            newBackingArray[i] = backingArray[i];
+        }
+        backingArray = newBackingArray;
+    }
+
+    /**
+     * sifts (bubbles) the node at index up the tree until the heap property is satisfied
+     *
+     * @param index the index of the node to sift
+     */
+    private void siftUp(int index) {
+        if (index == 1) {
+            return;
+        }
+        int parentIndex = index / 2;
+        if (backingArray[index].compareTo(backingArray[parentIndex]) > 0) {
+            swap(index, parentIndex);
+            siftUp(parentIndex);
         }
     }
+
 
     /**
      * Removes and returns the max item of the heap. As usual for array-backed
@@ -112,35 +179,17 @@ public class MaxHeap<T extends Comparable<? super T>> {
      * @return the removed item
      */
     public T remove() {
-        if (isEmpty()) {
-            throw new NoSuchElementException("Heap is Empty");
+        if (size == 0) {
+            throw new NoSuchElementException("Attempting to remove the max item from an empty MaxHeap");
         }
-        T data = backingArray[1];
-        exchange(1, size--);
-        maxHeapify(1);
-        backingArray[size + 1] = null;
-        return data;
+        T removed = backingArray[1];
+        backingArray[1] = null;
+        swap(1, size);
+        size--;
+        heapify(1);
+        return removed;
     }
 
-    /**
-     * Turns tree to max heap
-     *
-     * @param i the index of a value
-     */
-    private void maxHeapify(int i) {
-        while (2 * i <= size) {
-            int j = 2 * i;
-            if (j < size && backingArray[j]
-                    .compareTo(backingArray[j + 1]) < 0) {
-                j++;
-            }
-            if (!(backingArray[i].compareTo(backingArray[j]) < 0)) {
-                break;
-            }
-            exchange(i, j);
-            i = j;
-        }
-    }
 
     /**
      * Returns the maximum element in the heap.

@@ -82,6 +82,12 @@ public class MaxHeapStudentTests {
               64  43     --->      /
              /  \                 15
             15  17
+
+                43
+               /  \                 17
+              17  15     --->      /
+             /  \                 15
+            
         */
         maxHeap.add(43);
         maxHeap.add(15);

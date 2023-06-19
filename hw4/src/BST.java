@@ -131,6 +131,7 @@ public class BST<T extends Comparable<? super T>> {
                 parent = curr;
                 curr = curr.getRight();
             } else {
+                size--;
                 return removeNode(curr, parent, isLeftChild);
             }
         }
@@ -159,7 +160,6 @@ public class BST<T extends Comparable<? super T>> {
             // single right child target or leaf target
             replaceWithChild(target, parent, right, isLeftChild);
         }
-        size--;
         return removed;
     }
 
@@ -197,7 +197,7 @@ public class BST<T extends Comparable<? super T>> {
             pparent = pparent.getRight();
         }
         target.setData(pparent.getRight().getData());
-        pparent.setRight(null);
+        removeNode(pparent.getRight(), pparent, false);
     }
     /**
      * Returns the data in the tree matching the parameter passed in (think
