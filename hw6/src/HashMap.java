@@ -7,8 +7,7 @@ import java.util.ArrayList;
 /**
  * Your implementation of HashMap.
  *
- * @author Hwuiwon Kim
- * @userid hkim944
+ * @author Parker Hyde
  * @version 1.0
  */
 public class HashMap<K, V> {
@@ -39,7 +38,6 @@ public class HashMap<K, V> {
      */
     public HashMap(int initialCapacity) {
         table = new MapEntry[initialCapacity];
-        size = 0;
     }
 
     /**
@@ -76,28 +74,22 @@ public class HashMap<K, V> {
      * map, return the old value associated with it
      */
     public V put(K key, V value) {
-        if (key == null || value == null) {
-            throw new IllegalArgumentException("Key or value is null");
+        if (key == null) {
+            throw new IllegalArgumentException("Attempting to insert null key into HashMap");
+        } else if (value == null) {
+            throw new IllegalArgumentException("Attempting to insert null value into HashMap");
         }
-        if ((size + 1) / (double) table.length > MAX_LOAD_FACTOR) {
-            resizeBackingTable(table.length * 2 + 1);
+        if (size+1 > MAX_LOAD_FACTOR * table.length) {
+            resizeBackingTable(2*table.length + 1);
         }
-        int index = Math.abs(key.hashCode() % table.length);
-        if (table[index] == null) {
-            table[index] = new MapEntry<>(key, value);
-        } else {
-            MapEntry<K, V> entry = table[index];
-            while (entry.getNext() != null && !entry.getKey().equals(key)) {
-                entry = entry.getNext();
-            }
-            if (entry.getKey().equals(key)) {
-                V oldValue = entry.getValue();
-                entry.setValue(value);
-                return oldValue;
-            } else {
-                entry.setNext(new MapEntry<>(key, value));
-            }
+        int bucket = getBucket(key);
+        MapEntry<K, V> entry = getEntry(bucket, key);
+        if (entry != null) {
+            V prev = entry.getValue();
+            entry.setValue(value);
+            return prev;
         }
+        table[bucket] = new MapEntry<>(key, value, table[bucket]);
         size++;
         return null;
     }
@@ -114,7 +106,7 @@ public class HashMap<K, V> {
      * iterate over each chain from front to back. Add entries to the new table
      * in the order in which they are traversed.
      *
-     * Remember, you cannot just simply copy the entries over to the new array.
+     * Remember, you cannot simply copy the entries over to the new array.
      * You will have to rehash all of the entries and add them to the new index
      * of the new table. Feel free to create new MapEntry objects to use when
      * adding to the new table to avoid pointer dependency issues between the
@@ -130,19 +122,23 @@ public class HashMap<K, V> {
      * the number of items in the hash map.
      */
     public void resizeBackingTable(int length) {
-        if (length < 0 || length < size) {
-            throw new IllegalArgumentException(
-                    "Length should be greater than 0 or size");
+        if (length == 0) {
+            throw new IllegalArgumentException("Attempting to resize backing table to length 0");
         }
-        MapEntry<K, V>[] entries = new MapEntry[length];
-        for (MapEntry entry : table) {
-            if (entry != null) {
-                int index =
-                        Math.abs(entry.getKey().hashCode() % entries.length);
-                entries[index] = entry;
+        if (length < size) {
+            String message = String.format("Attempting to resize backing table of size %d to length %d", size, length);
+            throw new IllegalArgumentException(message);
+        }
+        MapEntry<K, V>[] newTable = new MapEntry[length];
+        for (int i = 0; i < table.length; i++) {
+            for (MapEntry<K, V> curr = table[i]; curr != null; curr = curr.getNext()) {
+                K key = curr.getKey();
+                V value = curr.getValue();
+                int bucket = getBucket(key);
+                newTable[bucket] = new MapEntry<>(key, value, newTable[bucket]);
             }
         }
-        table = entries;
+        table = newTable;
     }
 
     /**
@@ -155,28 +151,26 @@ public class HashMap<K, V> {
      */
     public V remove(K key) {
         if (key == null) {
-            throw new IllegalArgumentException("Key can't be null");
+            throw new IllegalArgumentException("Attempting to remove key not present in HashMap");
         }
-        int index = Math.abs(key.hashCode() % table.length);
-        if (table[index] != null) {
-            MapEntry<K, V> prev = null;
-            MapEntry<K, V> entry = table[index];
-            while (entry.getNext() != null && !entry.getKey().equals(key)) {
-                prev = entry;
-                entry = entry.getNext();
+        int bucket = getBucket(key);
+        MapEntry<K, V> prev = null;
+        MapEntry<K, V> curr = table[bucket];
+        while (curr != null) {
+            if (!curr.getKey().equals(key)) {
+                prev = curr;
+                curr = curr.getNext();
+                continue;
             }
-            if (entry.getKey().equals(key)) {
-                V value = entry.getValue();
-                if (prev == null) {
-                    table[index] = entry.getNext();
-                } else {
-                    prev.setNext(entry.getNext());
-                }
-                size--;
-                return value;
+            V removed = curr.getValue();
+            if (prev == null) {
+                table[bucket] = curr.getNext();
+            } else {
+                prev.setNext(curr.getNext());
             }
+            return removed;
         }
-        throw new NoSuchElementException("Key doesn't exist");
+        throw new NoSuchElementException("Cannot remove: provided key is not present in HashMap");
     }
 
     /**
@@ -189,16 +183,14 @@ public class HashMap<K, V> {
      */
     public V get(K key) {
         if (key == null) {
-            throw new IllegalArgumentException("Key can't be null");
+            throw new IllegalArgumentException("Attempting to get value for null key");
         }
-        MapEntry<K, V> entry = table[Math.abs(key.hashCode() % table.length)];
-        while (entry != null && !entry.getKey().equals(key)) {
-            entry = entry.getNext();
+        int bucket = getBucket(key);
+        MapEntry<K, V> entry = getEntry(bucket, key);
+        if (entry == null) {
+            throw new NoSuchElementException("Attempting to get value from a key not present in the HashMap");
         }
-        if (entry != null) {
-            return entry.getValue();
-        }
-        throw new NoSuchElementException("Key is not in the map");
+        return entry.getValue();
     }
 
     /**
@@ -209,12 +201,10 @@ public class HashMap<K, V> {
      * @return whether or not the key is in the map
      */
     public boolean containsKey(K key) {
-        try {
-            get(key);
-        } catch (NoSuchElementException e) {
-            return false;
+        if (key == null) {
+            throw new IllegalArgumentException("Attempting to check if HashMap contains null key");
         }
-        return true;
+        return getEntry(getBucket(key), key) != null;
     }
 
     /**
@@ -228,13 +218,9 @@ public class HashMap<K, V> {
      */
     public Set<K> keySet() {
         Set<K> keys = new HashSet<>();
-        for (MapEntry entry : table) {
-            if (entry != null) {
-                keys.add((K) entry.getKey());
-                while (entry.getNext() != null) {
-                    entry = entry.getNext();
-                    keys.add((K) entry.getKey());
-                }
+        for (int i = 0; i < table.length; i++) {
+            for (MapEntry<K, V> curr = table[i]; curr != null; curr = curr.getNext()) {
+                keys.add(curr.getKey());
             }
         }
         return keys;
@@ -253,13 +239,9 @@ public class HashMap<K, V> {
      */
     public List<V> values() {
         List<V> values = new ArrayList<>();
-        for (MapEntry entry : table) {
-            if (entry != null) {
-                values.add((V) entry.getValue());
-                while (entry.getNext() != null) {
-                    entry = entry.getNext();
-                    values.add((V) entry.getValue());
-                }
+        for (int i = 0; i < table.length; i++) {
+            for (MapEntry<K, V> curr = table[i]; curr != null; curr = curr.getNext()) {
+                values.add(curr.getValue());
             }
         }
         return values;
@@ -271,6 +253,36 @@ public class HashMap<K, V> {
     public void clear() {
         table = new MapEntry[INITIAL_CAPACITY];
         size = 0;
+    }
+
+    /*
+     * Computes the bucket (table index) of a given key.
+     * The bucket is obtained by 
+     *  1) computing the hashCode of the key
+     *  2) taking the remainder of hashCode / table length
+     *  3) computing the absolute value of the remainder
+     *
+     * @param key the key required to compute the bucket
+     */
+    private int getBucket(K key) {
+        return Math.abs(key.hashCode() % table.length);
+    }
+
+    /*
+     * Returns the MapEntry associated with a given bucket and key.
+     * If no such key is found in the given bucket, returns null
+     *
+     * @param bucket the bucket associated with the MapEntry
+     * @param key the key associated with the MapEntry
+     * @return MapEntry in the given bucket matching the given key
+     */
+    private MapEntry<K, V> getEntry(int bucket, K key) {
+        for (MapEntry<K, V> curr = table[bucket]; curr != null; curr = curr.getNext()) {
+            if (curr.getKey().equals(key)) {
+                return curr;
+            }
+        }
+        return null;
     }
 
     /**
