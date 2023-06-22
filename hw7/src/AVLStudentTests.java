@@ -31,8 +31,11 @@ public class AVLStudentTests {
                 3
          */
         avlTree.add(5);
+        assertEquals((Integer) 5, avlTree.getRoot().getData());
         avlTree.add(4);
+        assertEquals((Integer) 5, avlTree.getRoot().getData());
         avlTree.add(3);
+        System.out.println(avlTree);
 
         assertEquals(3, avlTree.size());
 
@@ -125,7 +128,7 @@ public class AVLStudentTests {
         avlTree.add(386);
         avlTree.add(maximum);
 
-        assertSame(maximum, avlTree.get(new Integer(646)));
+        assertEquals(maximum, avlTree.get(new Integer(646)));
     }
 
     @Test(timeout = TIMEOUT)

@@ -116,7 +116,9 @@ public class AVLNode<T extends Comparable<? super T>> {
      */
     @Override
     public String toString() {
-        return String.format("Node containing %s (height %d, bf %d)",
+        return String.format("%s (height %d, bf %d)",
                 data.toString(), height, balanceFactor);
     }
+        //return String.format("Node containing %s (height %d, bf %d)",
+        //        data.toString(), height, balanceFactor);
 }
