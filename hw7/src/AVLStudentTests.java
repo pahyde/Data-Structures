@@ -35,7 +35,6 @@ public class AVLStudentTests {
         avlTree.add(4);
         assertEquals((Integer) 5, avlTree.getRoot().getData());
         avlTree.add(3);
-        System.out.println(avlTree);
 
         assertEquals(3, avlTree.size());
 
@@ -63,6 +62,7 @@ public class AVLStudentTests {
         avlTree.add(3);
         avlTree.add(5);
         avlTree.add(4);
+        System.out.println(avlTree);
 
         assertEquals(3, avlTree.size());
 
@@ -93,8 +93,10 @@ public class AVLStudentTests {
         avlTree.add(856);
         avlTree.add(386);
         avlTree.add(526);
+        System.out.println(avlTree);
 
         assertSame(toBeRemoved, avlTree.remove(new Integer(477)));
+        System.out.println(avlTree);
 
         assertEquals(4, avlTree.size());
 

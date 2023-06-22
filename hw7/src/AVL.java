@@ -39,9 +39,7 @@ public class AVL<T extends Comparable<? super T>> {
             throw new IllegalArgumentException("Attempting to initialize AVL tree with null collection");
         }
         try {
-            for (T item : data) {
-                add(item);
-            }
+            data.forEach(this::add);
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Attempting to initialize AVL tree with collection containing null data");
         }
@@ -54,7 +52,7 @@ public class AVL<T extends Comparable<? super T>> {
      * If the data is already in the tree, then nothing should be done (the
      * duplicate shouldn't get added, and size should not be incremented).
      *
-     * Remember to recalculate heights and balance factors going up the tree,
+     * Remember to calculate heights and balance factors going up the tree,
      * rebalancing if necessary.
      *
      * @throws java.lang.IllegalArgumentException if the data is null
@@ -64,7 +62,7 @@ public class AVL<T extends Comparable<? super T>> {
         if (data == null) {
             throw new IllegalArgumentException("Attempting to add null data to AVL tree");
         }
-        root = addHelper(root, data);
+        root = withData(root, data);
         size++;
     }
 
@@ -76,7 +74,7 @@ public class AVL<T extends Comparable<? super T>> {
      * @param data the data to be added
      * @return root of balanced subtree obtained by adding data to curr subtree
      */
-    private AVLNode<T> addHelper(AVLNode<T> curr, T data) {
+    private AVLNode<T> withData(AVLNode<T> curr, T data) {
         if (curr == null) {
             return new AVLNode<T>(data);
         }
@@ -86,14 +84,13 @@ public class AVL<T extends Comparable<? super T>> {
             return curr;
         } else if (cmp < 0) {
             // add left
-            curr.setLeft(addHelper(curr.getLeft(), data));
+            curr.setLeft(withData(curr.getLeft(), data));
         } else if (cmp > 0) {
             // add right
-            curr.setRight(addHelper(curr.getRight(), data));
+            curr.setRight(withData(curr.getRight(), data));
         }
-        updateStats(curr);
-        balanceAVLNode(curr);
-        return curr;
+        calculate(curr);
+        return balance(curr);
     }
 
     /*
@@ -102,23 +99,51 @@ public class AVL<T extends Comparable<? super T>> {
      *
      * @param target the node to update
      */
-    private void updateStats(AVLNode<T> target) {
+    private void calculate(AVLNode<T> target) {
         if (target == null) {
             return;
         }
-        AVLNode<T> left = target.getLeft();
-        AVLNode<T> right = target.getRight();
-        int leftHeight = left == null ? -1 : left.getHeight();
-        int rightHeight = right == null ? -1 : right.getHeight();
-        target.setHeight(1 + Math.max(leftHeight, rightHeight));
-        target.setBalanceFactor(leftHeight - rightHeight);
+        int left = getHeight(target.getLeft());
+        int right = getHeight(target.getRight());
+        target.setHeight(1 + Math.max(left, right));
+        target.setBalanceFactor(left - right);
+    }
+
+    /* Returns the height of a given node
+     * null nodes have height -1
+     *
+     * @param node the given node to calculate height
+     */
+    private int getHeight(AVLNode<T> node) {
+        return node == null ? -1 : node.getHeight();
     }
 
     /*
-     * rebalances the given node using a strategy corresponding to
+     * Checks if the given node is unbalanced
+     * Then rebalances if needed using the balance helper method
+     *
+     * @param a the root node
+     */
+    private AVLNode<T> balance(AVLNode<T> target) {
+        if (target == null) {
+            return target;
+        }
+        int bf1 = target.getBalanceFactor();
+        if (Math.abs(bf1) <= 1) {
+            // target is already balanced
+            return target;
+        }
+        AVLNode<T> child = bf1 > 0 ? target.getLeft() : target.getRight();
+        int bf2 = child.getBalanceFactor();
+        AVLNode<T> grandchild = bf2 > 0 ? child.getLeft() : child.getRight();
+        return rebalance(root, child, grandchild, bf1, bf2);
+    }
+
+    /*
+     * Rebalances the given node using a strategy corresponding to
      * one of the following 4 cases:
      *
-     *     case 1: Left-Left
+     *     case 1: Left-Left 
      *         a
      *        /
      *       b
@@ -146,151 +171,55 @@ public class AVL<T extends Comparable<? super T>> {
      *            \
      *             c
      *
-     *
-     * @param target the node to update
+     * @param a the root node
      */
-    private void balanceAVLNode(AVLNode<T> target) {
-        int balance = target.getBalanceFactor();
-        if (Math.abs(balance) <= 1) {
-            return;
+    private AVLNode<T> rebalance(AVLNode<T> a, AVLNode<T> b, AVLNode<T> c, int bf1, int bf2) {
+        if (bf1 > 0 && bf2 > 0) {
+            // case 1: Left-Left
+            return rotateRight(a, b);
         }
-        AVLNode<T> child = balance > 0 ? target.getLeft(): target.getRight();
-        int childBalance = child.getBalanceFactor();
-        if (balance > 0 && childBalance > 0){
-            System.out.println("rotate Left.. Left!");
-            rotateLeftLeft(
-                target, 
-                child,
-                child.getLeft()
-            );
-        } else if (balance > 0 && childBalance < 0) {
-            rotateLeftRight(
-                target, 
-                child,
-                child.getRight()
-            );
-        } else if (balance < 0 && childBalance > 0) {
-            rotateRightLeft(
-                target, 
-                child, 
-                child.getLeft()
-            );
+        if (bf1 > 0 && bf2 < 0) {
+            // case 2: Left-Right
+            a.setLeft(rotateLeft(b, c));
+            return rotateRight(a, c);
+        }
+        if (bf1 < 0 && bf2 > 0) {
+            // case 1: Right-Left
+            a.setRight(rotateRight(b, c));
+            return rotateLeft(a, c);
         } else {
-            rotateRightRight(
-                target, 
-                child, 
-                child.getRight()
-            );
+            // case 1: Righ-Right
+            return rotateLeft(a, b);
         }
-        // target is now balanced
-        updateStats(target.getLeft());
-        updateStats(target.getRight());
-        updateStats(target);
     }
 
     /*
-     * rotates unbalanced node for the Left-Left case
+     * rotates unbalanced nodes left
      *
-     * @param target target node to rebalance
-     * @param child child of target
-     * @param grandchild grandchild of target
-     *
-     * child  - target
-     *        \ gchild
-     *
-     * target - tRightChild
-     *        \ child.right
-     *
-     *     target(child)
-     *  c.left     child(target)
-     *             c.right   target.right
-     *
+     * @param parent
+     * @param child 
      */
-    private void rotateLeftLeft(
-        AVLNode<T> target, 
-        AVLNode<T> child, 
-        AVLNode<T> grandchild
-    ) {
-        T childData = child.getData();
-        child.setData(target.getData());
-        child.setLeft(child.getRight());
-        child.setRight(target.getRight());
-        target.setData(childData);
-        target.setLeft(grandchild);
-        target.setRight(child);
+    private AVLNode<T> rotateLeft(AVLNode<T> parent, AVLNode<T> child) {
+        parent.setRight(child.getLeft());
+        child.setLeft(parent);
+        calculate(parent);
+        calculate(child);
+        return child;
     }
 
     /*
-     * rotates unbalanced node for the Left-Left case
+     * rotates unbalanced nodes right
      *
-     * @param target target node to rebalance
-     * @param child child of target
-     * @param grandchild grandchild of target
-     *
-     *
-     *                target(grandchild)
-     *         child                   grandchild(target)
-     *    c.left  gchild.left     gchild.right    target.right
-     *
+     * @param parent
+     * @param child 
      */
-    private void rotateLeftRight(
-        AVLNode<T> target, 
-        AVLNode<T> child, 
-        AVLNode<T> grandchild
-    ) {
-        T grandchildData = grandchild.getData();
-        grandchild.setData(target.getData());
-        grandchild.setLeft(grandchild.getRight());
-        grandchild.setRight(target.getRight());
-        child.setRight(grandchild.getLeft());
-        target.setData(grandchildData);
-        target.setLeft(child);
-        target.setRight(grandchild);
+    private AVLNode<T> rotateRight(AVLNode<T> parent, AVLNode<T> child) {
+        parent.setLeft(child.getRight());
+        child.setRight(parent);
+        calculate(parent);
+        calculate(child);
+        return child;
     }
-
-    /*
-     * rotates unbalanced node for the Left-Right case
-     *
-     * @param target target node to rebalance
-     * @param child child of target
-     * @param grandchild grandchild of target
-     */
-    private void rotateRightLeft(
-        AVLNode<T> target, 
-        AVLNode<T> child, 
-        AVLNode<T> grandchild
-    ) {
-        T grandchildData = grandchild.getData();
-        grandchild.setData(target.getData());
-        grandchild.setRight(grandchild.getLeft());
-        grandchild.setLeft(target.getLeft());
-        child.setLeft(grandchild.getRight());
-        target.setData(grandchildData);
-        target.setRight(child);
-        target.setLeft(grandchild);
-    }
-
-    /*
-     * rotates unbalanced node for the Right-Right case
-     *
-     * @param target target node to rebalance
-     * @param child child of target
-     * @param grandchild grandchild of target
-     */
-    private void rotateRightRight(
-        AVLNode<T> target, 
-        AVLNode<T> child, 
-        AVLNode<T> grandchild
-    ) {
-        T childData = child.getData();
-        child.setData(target.getData());
-        child.setRight(child.getLeft());
-        child.setLeft(target.getLeft());
-        target.setData(childData);
-        target.setRight(grandchild);
-        target.setLeft(child);
-    }
-
 
     /**
      * Removes the data from the tree. There are 3 cases to consider:
@@ -302,7 +231,7 @@ public class AVL<T extends Comparable<? super T>> {
      * not the predecessor. As a reminder, rotations can occur after removing
      * the successor node.
      *
-     * Remember to recalculate heights going up the tree, rebalancing if
+     * Remember to calculate heights going up the tree, rebalancing if
      * necessary.
      *
      * @throws IllegalArgumentException if the data is null
@@ -316,18 +245,11 @@ public class AVL<T extends Comparable<? super T>> {
         if (data == null) {
             throw new IllegalArgumentException("Attempting to remove null data from AVL tree");
         }
-        if (root == null) {
-            throw new NoSuchElementException("Attempting to remove data not present in AVL tree");
-        }
-        if (data.equals(root.getData())) {
-            T removed = root.getData();
-            root = getReplacement(root);
-            return removed;
-        }
         try {
-            T removed = removeHelper(root, data);
+            AVLNode<T> removed = new AVLNode<>(null);
+            root = withoutData(root, data, removed);
             size--;
-            return removed;
+            return removed.getData();
         } catch (NoSuchElementException e) {
             throw new NoSuchElementException("Attempting to remove data not present in AVL tree");
         }
@@ -341,68 +263,44 @@ public class AVL<T extends Comparable<? super T>> {
      * @param data the data to be removed
      * @param removed AVLNode to store removed data
      * @return root of balanced subtree obtained after removing data from curr subtree
-     *
      */
-    private T removeHelper(AVLNode<T> curr, T data) {
-        int order = data.compareTo(curr.getData());
-        if (order == 0) {
-            throw new IllegalArgumentException("current.data should never equal data");
+    private AVLNode<T> withoutData(AVLNode<T> curr, T data, AVLNode<T> removed) {
+        if (curr == null) {
+            throw new NoSuchElementException("provided data not found in subtree");
         }
-        if (order < 0 && curr.getLeft() == null || order > 0 && curr.getRight() == null) {
-            throw new NoSuchElementException("provided data not found in given subtree");
+        int cmp = data.compareTo(curr.getData());
+        if (cmp < 0) {
+            curr.setLeft(withoutData(curr.getLeft(), data, removed));
+        } else if (cmp > 0) {
+            curr.setRight(withoutData(curr.getRight(), data, removed));
+        } else {
+            removed.setData(curr.getData());
+            curr = replacement(curr);
         }
-        T removed = null;
-        if (order < 0) {
-            // search left
-            if (curr.getLeft().getData().equals(data)) {
-                // remove left
-                removed = curr.getLeft().getData();
-                AVLNode<T> replacement = getReplacement(curr.getLeft());
-                curr.setLeft(replacement);
-            } else {
-                removed = removeHelper(curr.getLeft(), data);
-            }
+        calculate(curr);
+        return balance(curr);
+    } 
 
-        } else if (order > 0) {
-            // search right
-            if (curr.getRight().getData().equals(data)) {
-                // remove right
-                removed = curr.getLeft().getData();
-                AVLNode<T> replacement = getReplacement(curr.getLeft());
-                curr.setLeft(replacement);
-            } else {
-                removed = removeHelper(curr.getRight(), data);
-            }
-        }
-        updateStats(curr);
-        balanceAVLNode(curr);
-        return removed;
-    } /*
+    /*
      * Returns the appropriate replacement node for target
      *
      * @param target the target node to replace
      * @return the replacement node
      */
-    private AVLNode<T> getReplacement(AVLNode<T> target) {
+    private AVLNode<T> replacement(AVLNode<T> target) {
         AVLNode<T> left = target.getLeft();
         AVLNode<T> right = target.getRight();
         if (right == null) {
             return left;
-        } else if (left == null) {
-            return right;
-        } else if (right.getLeft() == null) {
-            right.setLeft(left);
-            updateStats(right);
-            balanceAVLNode(right);
+        }
+        if (left == null) {
             return right;
         }
-        AVLNode<T> succ = new AVLNode<>(null);
-        removeSuccessor(right, succ);
-        succ.setLeft(left);
-        succ.setRight(right);
-        updateStats(succ);
-        balanceAVLNode(succ);
-        return succ;
+        AVLNode<T> successor = new AVLNode<>(null);
+        right = withoutSuccessor(right, successor);
+        successor.setLeft(left);
+        successor.setRight(right);
+        return successor;
     }
 
     /*
@@ -415,17 +313,17 @@ public class AVL<T extends Comparable<? super T>> {
      * @param successor the AVLNode used to store the found successor data of type T
      * @return the subtree after removing the successor
      */
-    private void removeSuccessor(AVLNode<T> subtree, AVLNode<T> successor) {
-        AVLNode<T> left = subtree.getLeft();
-        if (left.getLeft() == null) {
-            successor.setData(left.getData());
-            AVLNode<T> replacement = getReplacement(left);
-            subtree.setLeft(replacement);
+    private AVLNode<T> withoutSuccessor(AVLNode<T> curr, AVLNode<T> successor) {
+        if (curr.getLeft() == null) {
+            // curr is successor
+            successor.setData(curr.getData());
+            curr = curr.getRight();
         } else {
-            removeSuccessor(left, successor);
+            curr.setLeft(withoutSuccessor(curr.getLeft(), successor));
         }
-        updateStats(subtree);
-        balanceAVLNode(subtree);
+        calculate(curr);
+        balance(curr);
+        return curr;
     }
 
     /**
@@ -443,7 +341,7 @@ public class AVL<T extends Comparable<? super T>> {
         if (data == null) {
             throw new IllegalArgumentException("Attempting to get null data from AVL tree");
         }
-        T found = getHelper(root, data);
+        T found = find(root, data);
         if (found == null) {
             throw new NoSuchElementException("The provided data is not present in the AVL tree");
         }
@@ -456,17 +354,17 @@ public class AVL<T extends Comparable<? super T>> {
      * @param data
      * @param 
      */
-    private T getHelper(AVLNode<T> curr, T data) {
+    private T find(AVLNode<T> curr, T data) {
         if (curr == null) {
             return null;
         }
-        int order = data.compareTo(curr.getData());
-        if (order == 0) {
+        int cmp = data.compareTo(curr.getData());
+        if (cmp == 0) {
             return data;
-        } else if (order < 0) {
-            return getHelper(curr.getLeft(), data);
+        } else if (cmp < 0) {
+            return find(curr.getLeft(), data);
         } else {
-            return getHelper(curr.getRight(), data);
+            return find(curr.getRight(), data);
         }
     }
 
@@ -481,7 +379,7 @@ public class AVL<T extends Comparable<? super T>> {
      * @return whether or not the parameter is contained within the tree.
      */
     public boolean contains(T data) {
-        return getHelper(root, data) != null;
+        return find(root, data) != null;
     }
 
     /**
@@ -635,8 +533,11 @@ public class AVL<T extends Comparable<? super T>> {
         // DO NOT MODIFY THIS METHOD
         return size;
     }
-
-
+    
+    /*
+     * Formats AVL tree in level-order traversal
+     */
+    @Override
     public String toString() {
         StringBuilder sb = new StringBuilder("\n");
         Queue<AVLNode<T>> queue = new LinkedList<>();
