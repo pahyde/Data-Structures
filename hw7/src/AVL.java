@@ -184,11 +184,11 @@ public class AVL<T extends Comparable<? super T>> {
             return rotateRight(a, c);
         }
         if (bf1 < 0 && bf2 > 0) {
-            // case 1: Right-Left
+            // case 3: Right-Left
             a.setRight(rotateRight(b, c));
             return rotateLeft(a, c);
         } else {
-            // case 1: Righ-Right
+            // case 4: Righ-Right
             return rotateLeft(a, b);
         }
     }
