@@ -122,8 +122,12 @@ public class PatternMatchingStudentTests {
     @Test(timeout = TIMEOUT)
     public void testKMPNoMatch() {
         /*
-            pattern: ababa
+            patt  ababa
+                  ^
             text: ababbaba
+                        ^
+
+            cmp: 9
             indices: -
             expected total comparison: 10
          */
@@ -201,6 +205,15 @@ public class PatternMatchingStudentTests {
             indices: -
             expected total comparisons: 9
          */
+        /*
+            pattern: sell
+            count: 8;
+            sea lions trains cardinal boardwalk
+            01234567890123456789012345678901234                               sell
+            indices: -
+            expected total comparisons: 9
+         */
+        System.out.println(comparator.getComparisonCount());
         assertEquals(emptyList,
                 PatternMatching.boyerMoore(sellPattern,
                         sellNoMatch, comparator));
@@ -311,6 +324,7 @@ public class PatternMatchingStudentTests {
             indices: 2
             expected total comparisons: 5
          */
+        System.out.println("here");
         List<Integer> answer = new ArrayList<>();
         answer.add(3);
         assertEquals(answer,
