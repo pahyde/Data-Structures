@@ -1,6 +1,7 @@
 # CS1332
 
 Implementations for Georgia Tech CS1332 - Data Structures (spring 2019). 
+
 Found the assignments online and implemented them over the past couple weeks as part of my morning routine.
 
 __HW 1:__ ArrayList
