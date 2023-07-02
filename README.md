@@ -1,6 +1,7 @@
-# Georgia Tech CS1332 (Spring 2019)
+# Georgia Tech CS1332
 
-Found the homeworks online and implemented them over the past couple weeks as part of my morning routine.
+Implementations for CS1332 - Data Structures (Spring 2019).  
+Found the homeworks online and implemented them as part of my morning routine.
 
 __HW 1:__ ArrayList
 
