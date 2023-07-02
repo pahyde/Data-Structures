@@ -5,8 +5,7 @@ import java.util.Random;
 /**
  * Your implementation of various sorting algorithms.
  *
- * @author Hwuiwon Kim
- * @userid hkim944
+ * @author Parker Hyde
  * @version 1.0
  */
 public class Sorting {

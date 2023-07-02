@@ -3,8 +3,7 @@ import java.util.NoSuchElementException;
 /**
  * Your implementation of a linked queue. It should NOT be circular.
  *
- * @author Hwuiwon Kim
- * @userid hkim944
+ * @author Parker Hyde
  * @version 1.0
  */
 public class LinkedQueue<T> {

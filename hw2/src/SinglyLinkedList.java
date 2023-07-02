@@ -1,8 +1,7 @@
 /**
  * Your implementation of a circular singly linked list.
  *
- * @author 
- * @userid 
+ * @author Parker Hyde
  * @version 1.0
  */
 public class SinglyLinkedList<T> {

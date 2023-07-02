@@ -11,8 +11,7 @@ import java.util.HashMap;
 /**
  * Your implementation of various different graph algorithms.
  *
- * @author Hwuiwon Kim
- * @userid hkim944
+ * @author Parker Hyde
  * @version 1.0
  */
 public class GraphAlgorithms {
@@ -44,28 +43,23 @@ public class GraphAlgorithms {
      * @return list of vertices in visited order
      */
     public static <T> List<Vertex<T>> bfs(Vertex<T> start, Graph<T> graph) {
-        if (start == null || graph == null
-                || !graph.getAdjList().containsKey(start)) {
-            throw new IllegalArgumentException("Arguments can't be null");
-        }
+        checkArgs(start, graph);
+        List<Vertex<T>> visited = new ArrayList<>();
+        Set<Vertex<T>> seen = new HashSet<>();
         Queue<Vertex<T>> queue = new LinkedList<>();
-        Set<Vertex<T>> visited = new HashSet<>();
-        List<Vertex<T>> result = new ArrayList<>();
-
         queue.add(start);
-        visited.add(start);
-
         while (!queue.isEmpty()) {
-            Vertex<T> tmp = queue.remove();
-            result.add(tmp);
-            for (VertexDistance<T> vd : graph.getAdjList().get(tmp)) {
-                if (!visited.contains(vd.getVertex())) {
-                    queue.add(vd.getVertex());
-                    visited.add(vd.getVertex());
+            Vertex<T> next = queue.remove();
+            visited.add(next);
+            for (VertexDistance<T> vd : graph.getAdjList().get(next)) {
+                Vertex<T> neighbor = vd.getVertex();
+                if (!seen.contains(neighbor)) {
+                    seen.add(neighbor);
+                    queue.add(neighbor);
                 }
             }
         }
-        return result;
+        return visited;
     }
 
     /**
@@ -98,37 +92,40 @@ public class GraphAlgorithms {
      * @return list of vertices in visited order
      */
     public static <T> List<Vertex<T>> dfs(Vertex<T> start, Graph<T> graph) {
-        if (start == null || graph == null
-                || !graph.getAdjList().containsKey(start)) {
-            throw new IllegalArgumentException("Arguments can't be null");
-        }
-        Set<Vertex<T>> visited = new HashSet<>();
-        List<Vertex<T>> result = new ArrayList<>();
-
-        dfs(start, graph, visited, result);
-        return result;
+        checkArgs(start, graph);
+        List<Vertex<T>> visited = new ArrayList<>();
+        Set<Vertex<T>> seen = new HashSet<>();
+        dfsHelper(start, graph, visited, seen);
+        return new ArrayList<>(visited);
     }
 
-    /**
-     * Recursive helper method for dfs
+    /*
+     * dfs helper method
+     * recursively visits each vertex in the graph beginning with start vertex
+     * adds each visited node to visited set
      *
-     * @param <T> the generic typing of the data
-     * @param vertex the vertex to begin the dfs on
+     * @param curr the current vertex we are visiting
      * @param graph the graph to search through
-     * @param vs the set of visited vertex
-     * @param result the list that is returned
+     * @param visited the ordered list of visited vertices to populate
+     * @param seen the O(1) lookup set of seen vertices to populate
+     * @return set of vertices in visited order
      */
-    private static <T> void dfs(Vertex<T> vertex, Graph<T> graph,
-                                Set<Vertex<T>> vs, List<Vertex<T>> result) {
-        result.add(vertex);
-        vs.add(vertex);
-
-        for (VertexDistance<T> vd : graph.getAdjList().get(vertex)) {
-            if (!vs.contains(vd.getVertex())) {
-                dfs(vd.getVertex(), graph, vs, result);
-            }
+    private static <T> void dfsHelper(
+        Vertex<T> curr, 
+        Graph<T> graph, 
+        List<Vertex<T>> visited,
+        Set<Vertex<T>> seen
+    ) {
+        if (seen.contains(curr)) {
+            return;
+        }
+        visited.add(curr);
+        seen.add(curr);
+        for (VertexDistance neighbor : graph.getAdjList().get(curr)) {
+            dfsHelper(neighbor.getVertex(), graph, visited, seen);
         }
     }
+
 
     /**
      * Finds the single-source shortest distance between the start vertex and
@@ -162,36 +159,48 @@ public class GraphAlgorithms {
      * @return a map of the shortest distances from {@code start} to every
      *          other node in the graph
      */
-    public static <T> Map<Vertex<T>, Integer> dijkstras(Vertex<T> start,
-                                                        Graph<T> graph) {
-        if (start == null || graph == null
-                || !graph.getAdjList().containsKey(start)) {
-            throw new IllegalArgumentException("Arguments can't be null");
-        }
-        Queue<VertexDistance<T>> queue = new PriorityQueue<>();
-        Map<Vertex<T>, Integer> result = new HashMap<>();
-
-        for (Vertex<T> v : graph.getAdjList().keySet()) {
-            if (v.equals(start)) {
-                result.put(v, 0);
-            } else {
-                result.put(v, Integer.MAX_VALUE);
+    public static <T> Map<Vertex<T>, Integer> dijkstras(Vertex<T> start, Graph<T> graph) {
+        checkArgs(start, graph);
+        Map<Vertex<T>, Integer> distances = initDistances(graph);
+        Set<Vertex<T>> visited = new HashSet<>();
+        Queue<VertexDistance<T>> pq = new PriorityQueue<>();
+        pq.add(new VertexDistance<>(start, 0));
+        int vertexCount = graph.getVertices().size();
+        while (!pq.isEmpty() && visited.size() < vertexCount) {
+            VertexDistance<T> next = pq.remove();
+            Vertex<T> v = next.getVertex();
+            if (visited.contains(v)) {
+                continue;
             }
-        }
-
-        queue.add(new VertexDistance<>(start, 0));
-        while (!queue.isEmpty()) {
-            VertexDistance<T> tmp = queue.remove();
-            for (VertexDistance<T> vd
-                    : graph.getAdjList().get(tmp.getVertex())) {
-                int distance = tmp.getDistance() + vd.getDistance();
-                if (result.get(vd.getVertex()) > distance) {
-                    result.put(vd.getVertex(), distance);
-                    queue.add(new VertexDistance<>(vd.getVertex(), distance));
+            int distance = next.getDistance();
+            distances.put(v, distance);
+            visited.add(v);
+            for (VertexDistance<T> vd : graph.getAdjList().get(v)) {
+                Vertex<T> neighbor = vd.getVertex();
+                if (!visited.contains(neighbor)) {
+                    int neighborDistance = vd.getDistance();
+                    pq.add(new VertexDistance<>(
+                        neighbor, 
+                        distance + neighborDistance
+                    ));
                 }
             }
         }
-        return result;
+        return distances;
+    }
+
+    /*
+     * Dijkstra helper method to initialize vertex distances to Integer.MAX_VALUE
+     *
+     * @param graph the graph containing the vertices to init
+     * @return the vertex distances map
+     */
+    private static <T> Map<Vertex<T>, Integer> initDistances(Graph<T> graph) {
+        Map<Vertex<T>, Integer> distances = new HashMap<>();
+        for (Vertex<T> v : graph.getVertices()) {
+            distances.put(v, Integer.MAX_VALUE);
+        }
+        return distances;
     }
 
     /**
@@ -230,36 +239,65 @@ public class GraphAlgorithms {
      * @param start the vertex to begin Prims on
      * @param graph the graph we are applying Prims to
      * @return the MST of the graph or null if there is no valid MST
-     */
+     */ 
     public static <T> Set<Edge<T>> prims(Vertex<T> start, Graph<T> graph) {
-        if (start == null || graph == null
-                || !graph.getAdjList().containsKey(start)) {
-            throw new IllegalArgumentException("Arguments can't be null");
-        }
-        PriorityQueue<Edge<T>> queue = new PriorityQueue<>(graph.getEdges());
+        checkArgs(start, graph);
         Set<Vertex<T>> visited = new HashSet<>();
-        Set<Edge<T>> result = new HashSet<>();
-
+        Set<Edge<T>> mst = new HashSet<>();
+        Queue<Edge<T>> pq = new PriorityQueue<>();
+        // Initialize Priority Queue
+        for (VertexDistance<T> vd : graph.getAdjList().get(start)) {
+            Vertex<T> neighbor = vd.getVertex();
+            int weight = vd.getDistance();
+            pq.add(new Edge<T>(start, neighbor, weight));
+        }
+        // Initialize visited set
         visited.add(start);
-        while (!queue.isEmpty()) {
-            Edge<T> tmp = queue.remove();
-            if (!visited.contains(tmp.getV()) || !visited.contains(tmp.getU())) {
-                result.add(tmp);
-                result.add(new Edge<>(tmp.getV(), tmp.getU(), tmp.getWeight()));
-                visited.add(tmp.getV());
-                for (Edge<T> edge : graph.getEdges()) {
-                    if (edge.getV().equals(tmp.getU())) {
-                        result.add(edge);
-                    } else {
-                        queue.add(edge);
-                    }
+        int vertexCount = graph.getVertices().size();
+        while (!pq.isEmpty() && visited.size() < vertexCount) {
+            Edge<T> next = pq.remove();
+            if (visited.contains(next.getV())) {
+                continue;
+            }
+            visited.add(next.getV());
+            mst.add(next);
+            mst.add(reverseEdge(next));
+            for (VertexDistance<T> vd : graph.getAdjList().get(next.getV())) {
+                Vertex<T> u = next.getV();
+                Vertex<T> v = vd.getVertex();
+                int weight = vd.getDistance();
+                if (!visited.contains(v)) {
+                    pq.add(new Edge<>(u, v, weight));
                 }
             }
         }
+        return visited.size() == vertexCount ? mst : null;
+    }
 
-        if (result.size() < graph.getVertices().size() - 1) {
-            return null;
+    /*
+     * prims helper method
+     * takes input (u,v,weight) edge and returns the reversed (v,u,weight) edge
+     *
+     * @param edge the edge to reverse
+     * @return the reversed edge
+     */
+    private static <T> Edge<T> reverseEdge(Edge<T> edge) {
+        return new Edge<>(edge.getV(), edge.getU(), edge.getWeight());
+    }
+
+    /*
+     * Helper method to sanitize inputs
+     * @throws IllegalArgumentException if any input 
+     * is null, or if start doesn't exist in the graph
+     * @param start the start vertex for the search algorithm
+     * @param graph the graph we are searching
+     */
+    private static <T> void checkArgs(Vertex<T> start, Graph<T> graph) {
+        if (start == null || graph == null) {
+            throw new IllegalArgumentException("Inputs cannot be null");
         }
-        return result;
+        if (!graph.getVertices().contains(start)) {
+            throw new IllegalArgumentException("graph must contain start vertex");
+        }
     }
 }

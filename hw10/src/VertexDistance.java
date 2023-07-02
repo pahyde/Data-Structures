@@ -7,8 +7,7 @@
  * @author CS 1332 TAs
  * @version 1.0
  */
-public final class VertexDistance<T>
-        implements Comparable<VertexDistance<? super T>> {
+public final class VertexDistance<T> implements Comparable<VertexDistance<? super T>> {
 
     private final Vertex<T> vertex;
     private final int distance;
